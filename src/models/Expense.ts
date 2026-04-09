@@ -19,6 +19,16 @@ const BaseExpenseSchema = new Schema(
       enum: Object.values(ExpenseType),
       required: true,
     },
+    parentDiaryId: {
+      type: Schema.Types.ObjectId,
+      ref: "Expense",
+      default: null,
+    },
+    status: {
+      type: String,
+      enum: ["ABERTO", "FECHADO"],
+      default: "ABERTO",
+    },
   },
   {
     timestamps: true,
