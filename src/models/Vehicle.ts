@@ -1,4 +1,13 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Document } from "mongoose";
+
+export interface IVehicle extends Document {
+  plate: string;
+  vehicleModel: string;
+  currentKm: number;
+  nextMaintenanceKm: number;
+  status: "DISPONIVEL" | "EM_ROTA" | "MANUTENCAO";
+  active: boolean;
+}
 
 const VehicleSchema = new Schema(
   {
@@ -9,11 +18,17 @@ const VehicleSchema = new Schema(
       uppercase: true,
       trim: true,
     },
-    model: { type: String, required: true },
-    name: { type: String, required: true },
+    vehicleModel: { type: String, required: true },
+    currentKm: { type: Number, required: true, default: 0 },
+    nextMaintenanceKm: { type: Number, default: 0 },
+    status: {
+      type: String,
+      enum: ["DISPONIVEL", "EM_ROTA", "MANUTENCAO"],
+      default: "DISPONIVEL",
+    },
     active: { type: Boolean, default: true },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-export const Vehicle = model("Vehicle", VehicleSchema);
+export const Vehicle = model<IVehicle>("Vehicle", VehicleSchema);

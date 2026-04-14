@@ -1,27 +1,26 @@
 import { Request, Response } from "express";
 import { AuthService } from "../services/AuthService";
 import { User } from "../models/User";
-
+import { handleApiError } from "../utils/errorHandler";
 const authService = new AuthService();
 
 export class AuthController {
   async login(req: Request, res: Response) {
     try {
-      const { email, password } = req.body;
+      const { phone, password } = req.body;
 
-      if (!email || !password) {
+      if (!phone || !password) {
         return res
           .status(400)
-          .json({ error: "E-mail e senha são obrigatórios." });
+          .json({ error: "Telefone e senha são obrigatórios." });
       }
 
-      const result = await authService.login(email, password);
+      const result = await authService.login(phone, password);
       return res.json(result);
     } catch (error: any) {
-      return res.status(401).json({ error: error.message });
+      return handleApiError(error, res);
     }
   }
-
   async register(req: Request, res: Response) {
     try {
       const { name, email, password, role } = req.body;

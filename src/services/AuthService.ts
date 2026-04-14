@@ -6,23 +6,17 @@ export class AuthService {
   private readonly JWT_SECRET =
     process.env.JWT_SECRET || "easyice_secret_key_2026";
 
-  async login(email: string, password: string) {
-    const user = (await User.findOne({ email }).select(
-      "+password",
+  async login(phone: string, password: string) {
+    const user = (await User.findOne({ phone }).select(
+      "+password"
     )) as IUser | null;
 
-    if (!user) {
-      throw new Error("E-mail ou senha incorretos.");
-    }
-    if (!user.active) {
-      throw new Error("Usuário inativo.");
-    }
+    if (!user) throw new Error("Telefone ou senha incorretos.");
+    if (!user.active) throw new Error("Usuário inativo.");
 
-    const isPasswordValid = await bcrypt.compare(password, user.password || "");
+    const isValid = await bcrypt.compare(password, user.password || "");
+    if (!isValid) throw new Error("Telefone ou senha incorretos.");
 
-    if (!isPasswordValid) {
-      throw new Error("E-mail ou senha incorretos.");
-    }
     const token = jwt.sign({ id: user._id, role: user.role }, this.JWT_SECRET, {
       expiresIn: "1d",
     });
@@ -31,8 +25,9 @@ export class AuthService {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email,
+        phone: user.phone,
         role: user.role,
+        notificationPreferences: user.notificationPreferences,
       },
       token,
     };
