@@ -29,6 +29,7 @@ const BaseExpenseSchema = new Schema(
       default: "ABERTO",
     },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    exportedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

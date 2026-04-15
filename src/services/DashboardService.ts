@@ -58,12 +58,7 @@ export class DashboardService {
 
     // ── Alertas de manutenção ────────────────────────
     const maintenanceAlerts = vehicles
-      .filter(
-        (v) =>
-          v.nextMaintenanceKm &&
-          v.nextMaintenanceKm > 0 &&
-          v.currentKm >= v.nextMaintenanceKm - 1000
-      )
+      .filter((v) => v.status === "MANUTENCAO")
       .map((v) => ({
         plate: v.plate,
         currentKm: v.currentKm,

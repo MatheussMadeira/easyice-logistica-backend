@@ -5,8 +5,10 @@ export interface IVehicle extends Document {
   vehicleModel: string;
   currentKm: number;
   nextMaintenanceKm: number;
+  maintenanceIntervalKm: number;
   status: "DISPONIVEL" | "EM_ROTA" | "MANUTENCAO";
   active: boolean;
+  maintenanceOverride: boolean;
 }
 
 const VehicleSchema = new Schema(
@@ -21,6 +23,8 @@ const VehicleSchema = new Schema(
     vehicleModel: { type: String, required: true },
     currentKm: { type: Number, required: true, default: 0 },
     nextMaintenanceKm: { type: Number, default: 0 },
+    maintenanceIntervalKm: { type: Number, default: 0 },
+    maintenanceOverride: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ["DISPONIVEL", "EM_ROTA", "MANUTENCAO"],

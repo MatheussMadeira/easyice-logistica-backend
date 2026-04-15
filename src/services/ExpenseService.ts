@@ -16,9 +16,18 @@ export class ExpenseService {
     if (!vehicle) throw new Error("Veículo não encontrado na frota.");
     if (!vehicle.active)
       throw new Error("Este veículo está desativado do sistema.");
-    if (vehicle.status !== "DISPONIVEL")
+    if (vehicle.status === "MANUTENCAO") {
+      if (!vehicle.maintenanceOverride) {
+        throw new Error(
+          `O veículo ${vehicle.plate} está em manutenção e não pode iniciar viagem.`
+        );
+      }
+      console.warn(
+        `Veículo ${vehicle.plate} em manutenção com override ativo.`
+      );
+    } else if (vehicle.status !== "DISPONIVEL") {
       throw new Error(`Veículo indisponível. Status atual: ${vehicle.status}`);
-
+    }
     const route = await Route.findById(diaryData.routeId);
     if (!route) throw new Error("A rota selecionada não existe.");
     if (!route.active)
@@ -69,8 +78,7 @@ export class ExpenseService {
     if (!diary) throw new Error("Diário não encontrado.");
 
     const driver = await User.findById(diary.userId);
-    if (!driver)
-      throw new Error("Motorista não encontrado para calcular a diária.");
+    if (!driver) throw new Error("Motorista não encontrado.");
 
     const startDate = new Date(diary.date);
     const endDate = closingData.date ? new Date(closingData.date) : new Date();
@@ -89,14 +97,30 @@ export class ExpenseService {
     const diffInMs = endDay.getTime() - startDay.getTime();
     const diffInDays = Math.round(diffInMs / (1000 * 60 * 60 * 24));
 
-    const DAILY_VALUE = driver.dailyAllowanceValue || 0;
-    const totalDailyAllowance = diffInDays * DAILY_VALUE;
+    // ── Cálculo da diária ─────────────────────────────
+    const FIRST_DAY_VALUE = driver.dailyAllowanceValue;
+    const ADDITIONAL_DAY_VALUE = 100;
+
+    const daysCount = Math.max(1, diffInDays);
+
+    const totalDailyAllowance =
+      daysCount === 1
+        ? FIRST_DAY_VALUE
+        : FIRST_DAY_VALUE + (daysCount - 1) * ADDITIONAL_DAY_VALUE;
+    // ─────────────────────────────────────────────────
 
     const expenses = await Expense.find({ parentDiaryId: diaryId });
     const totalExpensesAmount = expenses.reduce(
       (acc, curr) => acc + curr.amount,
       0
     );
+
+    const allowanceDescription =
+      daysCount === 1
+        ? `1 diária — R$ ${FIRST_DAY_VALUE}`
+        : `${daysCount} diárias — R$ ${FIRST_DAY_VALUE} + ${
+            daysCount - 1
+          }x R$ ${ADDITIONAL_DAY_VALUE}`;
 
     const updated = await DiaryExpense.findByIdAndUpdate(
       diaryId,
@@ -107,7 +131,7 @@ export class ExpenseService {
         dailyAllowance: totalDailyAllowance,
         totalToPay: totalDailyAllowance + totalExpensesAmount,
         amount: totalDailyAllowance + totalExpensesAmount,
-        description: `Viagem | ${diffInDays} diária(s).`,
+        description: `Viagem | ${allowanceDescription}.`,
       },
       { new: true }
     );
