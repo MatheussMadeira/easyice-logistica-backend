@@ -14,10 +14,13 @@ export class OperationalExpenseController {
         }) as any;
       }
 
-      const { name, vehicleId } = req.body;
+      const { name, vehicleId, category, amount, date } = req.body;
       const expense = await operationalExpenseService.createOperationalExpense({
         name,
         vehicleId,
+        category,
+        amount,
+        date,
       });
       return res.status(201).json(expense) as any;
     } catch (error: any) {
