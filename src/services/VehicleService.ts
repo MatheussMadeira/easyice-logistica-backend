@@ -1,13 +1,22 @@
 import { Vehicle } from "../models/Vehicle";
 import type { IVehicle } from "../models/Vehicle";
+import { notificationBroadcast } from "./NotificationBroadcastService";
+import { DashboardService } from "./DashboardService";
 
 export class VehicleService {
-  // Verifica se o veículo atingiu a margem de manutenção (10% antes)
+  private dashboardService = new DashboardService();
+  private broadcastStats = async () => {
+    if (notificationBroadcast.count === 0) return;
+    try {
+      const stats = this.dashboardService.getStats();
+      notificationBroadcast.broadcast(stats);
+    } catch {}
+  };
   private shouldTriggerMaintenance(vehicle: IVehicle): boolean {
     if (!vehicle.maintenanceIntervalKm || !vehicle.nextMaintenanceKm)
       return false;
 
-    const margin = vehicle.maintenanceIntervalKm * 0.1; // 10% do intervalo
+    const margin = vehicle.maintenanceIntervalKm * 0.1;
     const triggerKm = vehicle.nextMaintenanceKm - margin;
 
     return vehicle.currentKm >= triggerKm;
@@ -49,8 +58,10 @@ export class VehicleService {
         vehicle.status = "MANUTENCAO";
       }
     }
-
     await vehicle.save();
+    if (vehicle.status === "MANUTENCAO") {
+      this.broadcastStats();
+    }
     return vehicle;
   }
 
@@ -60,16 +71,19 @@ export class VehicleService {
 
     vehicle.currentKm = newKm;
 
-    if (
-      vehicle.status === "DISPONIVEL" &&
-      this.shouldTriggerMaintenance(vehicle)
-    ) {
+    const wasDisponivel = vehicle.status === "DISPONIVEL";
+
+    if (wasDisponivel && this.shouldTriggerMaintenance(vehicle)) {
       vehicle.status = "MANUTENCAO";
     }
 
     vehicle.maintenanceOverride = false;
-
     await vehicle.save();
+
+    if (vehicle.status === "MANUTENCAO" && wasDisponivel) {
+      this.broadcastStats();
+    }
+
     return vehicle;
   }
 

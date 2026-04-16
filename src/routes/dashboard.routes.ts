@@ -12,5 +12,6 @@ dashboardRoutes.get(
   roleMiddleware(["ADMIN"]),
   dashboardController.getStats
 );
+dashboardRoutes.get("/stream", authMiddleware, dashboardController.stream);
 
 export { dashboardRoutes };

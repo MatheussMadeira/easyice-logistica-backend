@@ -9,17 +9,16 @@ interface TokenPayload {
 export const authMiddleware = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   const authHeader = req.headers.authorization;
+  const token = authHeader?.split(" ")[1] ?? (req.query.token as string);
 
-  if (!authHeader) {
+  if (!token) {
     return res
       .status(401)
       .json({ error: "Acesso negado. Token não fornecido." }) as any;
   }
-
-  const [, token] = authHeader.split(" ");
 
   try {
     const secret = process.env.JWT_SECRET || "easyice_secret_key_2026";
@@ -29,7 +28,7 @@ export const authMiddleware = (
     req.userRole = decoded.role;
 
     return next();
-  } catch (err) {
+  } catch {
     return res
       .status(401)
       .json({ error: "Token inválido ou expirado." }) as any;

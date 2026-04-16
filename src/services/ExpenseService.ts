@@ -2,8 +2,20 @@ import { DiaryExpense, Expense, ExpenseType } from "../models/Expense";
 import { Vehicle } from "../models/Vehicle";
 import { Route } from "../models/Route";
 import { User } from "../models/User";
+import { DashboardService } from "./DashboardService";
+import { notificationBroadcast } from "./NotificationBroadcastService";
 
 export class ExpenseService {
+  dashboardService = new DashboardService();
+
+  broadcastStats = () => {
+    if (notificationBroadcast.count === 0) return;
+    try {
+      const stats = this.dashboardService.getStats();
+      notificationBroadcast.broadcast(stats);
+    } catch {}
+  };
+
   async openDiary(userId: string, diaryData: any) {
     const activeDiary = await Expense.findOne({
       userId,
@@ -44,7 +56,7 @@ export class ExpenseService {
     vehicle.status = "EM_ROTA";
     vehicle.currentKm = diaryData.kmStart || vehicle.currentKm;
     await vehicle.save();
-
+    this.broadcastStats();
     return diary;
   }
 
@@ -146,7 +158,7 @@ export class ExpenseService {
       status: "DISPONIVEL",
       currentKm: closingData.kmEnd,
     });
-
+    this.broadcastStats();
     return updated;
   }
 
@@ -223,7 +235,7 @@ export class ExpenseService {
 
   async cancelDiary(userId: string | null, diaryId: string) {
     const query: any = { _id: diaryId };
-    if (userId) query.userId = userId; // 👈 admin bypassa
+    if (userId) query.userId = userId;
 
     const diary = await Expense.findOne(query);
     if (!diary || diary.status !== "ABERTO")
@@ -238,6 +250,7 @@ export class ExpenseService {
       { new: true }
     );
     await Vehicle.findByIdAndUpdate(diary.vehicleId, { status: "DISPONIVEL" });
+    this.broadcastStats();
     return canceled;
   }
 
