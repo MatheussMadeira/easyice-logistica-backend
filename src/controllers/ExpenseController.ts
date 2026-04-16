@@ -7,10 +7,12 @@ const expenseService = new ExpenseService();
 export class ExpenseController {
   async openDiary(req: Request, res: Response) {
     try {
-      const diary = await expenseService.openDiary(
-        req.userId as string,
-        req.body
-      );
+      const effectiveUserId =
+        req.userRole === "ADMIN" && req.body.driverId
+          ? req.body.driverId
+          : (req.userId as string);
+
+      const diary = await expenseService.openDiary(effectiveUserId, req.body);
       return res.status(201).json(diary) as any;
     } catch (error: any) {
       return handleApiError(error, res);
@@ -19,8 +21,10 @@ export class ExpenseController {
 
   async addExpense(req: Request, res: Response) {
     try {
+      const userId = req.userRole === "ADMIN" ? null : (req.userId as string);
+
       const expense = await expenseService.addExpenseToDiary(
-        req.userId as string,
+        userId,
         req.params.diaryId as string,
         req.body
       );
@@ -32,8 +36,10 @@ export class ExpenseController {
 
   async closeDiary(req: Request, res: Response) {
     try {
+      const userId = req.userRole === "ADMIN" ? null : (req.userId as string);
+
       const closed = await expenseService.closeDiary(
-        req.userId as string,
+        userId,
         req.params.diaryId as string,
         req.body
       );
@@ -43,15 +49,16 @@ export class ExpenseController {
     }
   }
 
-  async index(req: Request, res: Response) {
+  async removeExpense(req: Request, res: Response) {
     try {
-      const { status } = req.query;
-      const diaries = await expenseService.listDiaries(
-        req.userId as string,
-        req.userRole as string,
-        status as string
+      const userId = req.userRole === "ADMIN" ? null : (req.userId as string);
+
+      const result = await expenseService.removeExpense(
+        userId,
+        req.params.diaryId as string,
+        req.params.expenseId as string
       );
-      return res.json(diaries) as any;
+      return res.json(result) as any;
     } catch (error: any) {
       return handleApiError(error, res);
     }
@@ -84,26 +91,28 @@ export class ExpenseController {
     }
   }
 
-  async removeExpense(req: Request, res: Response) {
+  async cancelDiary(req: Request, res: Response) {
     try {
-      const result = await expenseService.removeExpense(
-        req.userId as string,
-        req.params.diaryId as string,
-        req.params.expenseId as string
+      const userId = req.userRole === "ADMIN" ? null : (req.userId as string);
+
+      const canceled = await expenseService.cancelDiary(
+        userId,
+        req.params.diaryId as string
       );
-      return res.json(result) as any;
+      return res.json(canceled) as any;
     } catch (error: any) {
       return handleApiError(error, res);
     }
   }
-
-  async cancelDiary(req: Request, res: Response) {
+  async index(req: Request, res: Response) {
     try {
-      const canceled = await expenseService.cancelDiary(
+      const { status } = req.query;
+      const diaries = await expenseService.listDiaries(
         req.userId as string,
-        req.params.diaryId as string
+        req.userRole as string,
+        status as string
       );
-      return res.json(canceled) as any;
+      return res.json(diaries) as any;
     } catch (error: any) {
       return handleApiError(error, res);
     }

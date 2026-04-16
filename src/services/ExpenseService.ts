@@ -48,10 +48,16 @@ export class ExpenseService {
     return diary;
   }
 
-  async addExpenseToDiary(userId: string, diaryId: string, expenseData: any) {
-    const diary = await Expense.findOne({ _id: diaryId, userId });
-    if (!diary)
-      throw new Error("Diário não encontrado ou não pertence a você.");
+  async addExpenseToDiary(
+    userId: string | null,
+    diaryId: string,
+    expenseData: any
+  ) {
+    const query: any = { _id: diaryId };
+    if (userId) query.userId = userId;
+
+    const diary = await Expense.findOne(query);
+    if (!diary) throw new Error("Diário não encontrado.");
     if (diary.status !== "ABERTO")
       throw new Error(
         "Não é possível adicionar despesas a um diário finalizado."
@@ -59,25 +65,23 @@ export class ExpenseService {
 
     return await Expense.create({
       ...expenseData,
-      userId,
+      userId: diary.userId,
       parentDiaryId: diaryId,
       vehicleId: diary.vehicleId,
     });
   }
 
   async closeDiary(
-    userId: string,
+    userId: string | null,
     diaryId: string,
-    closingData: { kmEnd: number; date?: Date }
+    closingData: { kmEnd: number; closingDriverId?: string; date?: Date }
   ) {
-    const diary = await Expense.findOne({
-      _id: diaryId,
-      userId,
-      type: "DIARIO",
-    });
+    const query: any = { _id: diaryId, type: "DIARIO" };
+    if (userId) query.userId = userId;
+    const diary = await Expense.findOne(query);
     if (!diary) throw new Error("Diário não encontrado.");
-
-    const driver = await User.findById(diary.userId);
+    const driverIdForCalc = closingData.closingDriverId ?? String(diary.userId);
+    const driver = await User.findById(driverIdForCalc);
     if (!driver) throw new Error("Motorista não encontrado.");
 
     const startDate = new Date(diary.date);
@@ -97,17 +101,17 @@ export class ExpenseService {
     const diffInMs = endDay.getTime() - startDay.getTime();
     const diffInDays = Math.round(diffInMs / (1000 * 60 * 60 * 24));
 
-    // ── Cálculo da diária ─────────────────────────────
     const FIRST_DAY_VALUE = driver.dailyAllowanceValue;
     const ADDITIONAL_DAY_VALUE = 100;
 
-    const daysCount = Math.max(1, diffInDays);
+    const daysCount = diffInDays;
 
     const totalDailyAllowance =
-      daysCount === 1
+      daysCount === 0
+        ? 0
+        : daysCount === 1
         ? FIRST_DAY_VALUE
         : FIRST_DAY_VALUE + (daysCount - 1) * ADDITIONAL_DAY_VALUE;
-    // ─────────────────────────────────────────────────
 
     const expenses = await Expense.find({ parentDiaryId: diaryId });
     const totalExpensesAmount = expenses.reduce(
@@ -116,7 +120,9 @@ export class ExpenseService {
     );
 
     const allowanceDescription =
-      daysCount === 1
+      daysCount === 0
+        ? "Viagem no mesmo dia — sem diária"
+        : daysCount === 1
         ? `1 diária — R$ ${FIRST_DAY_VALUE}`
         : `${daysCount} diárias — R$ ${FIRST_DAY_VALUE} + ${
             daysCount - 1
@@ -195,8 +201,15 @@ export class ExpenseService {
     return updated;
   }
 
-  async removeExpense(userId: string, diaryId: string, expenseId: string) {
-    const diary = await Expense.findOne({ _id: diaryId, userId });
+  async removeExpense(
+    userId: string | null,
+    diaryId: string,
+    expenseId: string
+  ) {
+    const query: any = { _id: diaryId };
+    if (userId) query.userId = userId;
+
+    const diary = await Expense.findOne(query);
     if (!diary || diary.status !== "ABERTO")
       throw new Error("Diário inválido ou já fechado.");
 
@@ -208,12 +221,15 @@ export class ExpenseService {
     return { message: "Despesa removida." };
   }
 
-  async cancelDiary(userId: string, diaryId: string) {
-    const diary = await Expense.findOne({ _id: diaryId, userId });
-    if (!diary || diary.status !== "ABERTO")
-      throw new Error("Apenas diários em andamento podem ser cancelados.");
+  async cancelDiary(userId: string | null, diaryId: string) {
+    const query: any = { _id: diaryId };
+    if (userId) query.userId = userId; // 👈 admin bypassa
 
-    const canceledDiary = await Expense.findByIdAndUpdate(
+    const diary = await Expense.findOne(query);
+    if (!diary || diary.status !== "ABERTO")
+      throw new Error("Apenas diários em aberto podem ser cancelados.");
+
+    const canceled = await Expense.findByIdAndUpdate(
       diaryId,
       {
         status: "CANCELADO",
@@ -221,13 +237,10 @@ export class ExpenseService {
       },
       { new: true }
     );
-
-    await Vehicle.findByIdAndUpdate(diary.vehicleId, {
-      status: "DISPONIVEL",
-    });
-
-    return canceledDiary;
+    await Vehicle.findByIdAndUpdate(diary.vehicleId, { status: "DISPONIVEL" });
+    return canceled;
   }
+
   async listMaintenances() {
     return await Expense.find({ type: ExpenseType.MANUTENCAO })
       .sort({ createdAt: -1 })

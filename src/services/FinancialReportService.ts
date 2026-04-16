@@ -53,7 +53,26 @@ export class FinancialReportService {
 
     return diaries.map((diary: any) => {
       const subs = expensesByDiary[String(diary._id)] ?? [];
-
+      const startDate = new Date(diary.date);
+      const endDate = diary.dataFechamento
+        ? new Date(diary.dataFechamento)
+        : new Date();
+      const startDay = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate()
+      );
+      const endDay = new Date(
+        endDate.getFullYear(),
+        endDate.getMonth(),
+        endDate.getDate()
+      );
+      const daysCount = Math.max(
+        0,
+        Math.round(
+          (endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24)
+        )
+      );
       const combustivel = subs.filter((e: any) => e.type === "COMBUSTIVEL");
       const manutencao = subs.filter((e: any) => e.type === "MANUTENCAO");
       const generica = subs.filter((e: any) => e.type === "DESPESA_GENERICA");
@@ -114,6 +133,8 @@ export class FinancialReportService {
         genericaCategories,
         total: despesaMotorista + despesaOperacional,
         status: diary.status,
+        dailyAllowance: diary.dailyAllowance ?? 0,
+        daysCount,
       };
     });
   }

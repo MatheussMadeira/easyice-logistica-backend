@@ -5,12 +5,19 @@ export class StorageController {
   async upload(req: Request, res: Response) {
     try {
       if (!req.file) {
-        throw new Error("Nenhum arquivo foi enviado.");
+        return res
+          .status(400)
+          .json({ error: "Nenhum arquivo enviado." }) as any;
       }
-      const fileUrl = req.file.path;
-      return res.json({ url: fileUrl, public_id: req.file.filename }) as any;
+
+      const file = req.file as any;
+
+      return res.json({
+        url: file.path,
+        resourceType: file.mimetype.startsWith("video/") ? "video" : "image",
+        format: file.mimetype.split("/")[1],
+      }) as any;
     } catch (error: any) {
-      console.error("Erro no upload:", JSON.stringify(error, null, 2));
       return handleApiError(error, res);
     }
   }

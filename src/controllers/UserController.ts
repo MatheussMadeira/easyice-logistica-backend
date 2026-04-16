@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/UserService";
 import { handleApiError } from "../utils/errorHandler";
-
+import { User } from "../models/User";
 const userService = new UserService();
 
 export class UserController {
@@ -39,6 +39,16 @@ export class UserController {
       const id = req.params.id as string;
       const user = await userService.toggleActive(id);
       return res.json(user) as any;
+    } catch (error: any) {
+      return handleApiError(error, res);
+    }
+  }
+  async listExecutors(req: Request, res: Response) {
+    try {
+      const executors = await User.find({ role: "ADMIN", active: true })
+        .select("_id name")
+        .sort({ name: 1 });
+      return res.json(executors) as any;
     } catch (error: any) {
       return handleApiError(error, res);
     }

@@ -11,6 +11,7 @@ import { financialReportRoutes } from "./financialReport.routes";
 import { profileRoutes } from "./profile.routes";
 import { exportRoutes } from "./export.routes";
 import { operationalExpenseRoutes } from "./operationalExpense.routes";
+import { osRoutes } from "./ordemServico.routes";
 
 const routes = Router();
 
@@ -26,6 +27,7 @@ routes.use("/storage", storageRoutes);
 routes.use("/dashboard", dashboardRoutes);
 routes.use("/financial-report", financialReportRoutes);
 routes.use("/export", exportRoutes);
+routes.use("/os", osRoutes);
 routes.use("/profile", profileRoutes);
 
 export { routes };

@@ -8,7 +8,11 @@ const userController = new UserController();
 
 userRoutes.use(authMiddleware);
 userRoutes.use(roleMiddleware(["ADMIN"]));
-
+userRoutes.get(
+  "/executors",
+  authMiddleware,
+  userController.listExecutors 
+);
 userRoutes.post("/", userController.create);
 userRoutes.get("/", userController.index);
 userRoutes.put("/:id", userController.update);
