@@ -4,7 +4,8 @@ import { Route } from "../models/Route";
 import { User } from "../models/User";
 import { DashboardService } from "./DashboardService";
 import { notificationBroadcast } from "./NotificationBroadcastService";
-
+import { VehicleService } from "./VehicleService";
+const vehicleService = new VehicleService();
 export class ExpenseService {
   dashboardService = new DashboardService();
 
@@ -86,7 +87,12 @@ export class ExpenseService {
   async closeDiary(
     userId: string | null,
     diaryId: string,
-    closingData: { kmEnd: number; closingDriverId?: string; date?: Date }
+    closingData: {
+      kmEnd: number;
+      closingDriverId?: string;
+      date?: Date;
+      horimetroEnd?: number;
+    }
   ) {
     const query: any = { _id: diaryId, type: "DIARIO" };
     if (userId) query.userId = userId;
@@ -158,6 +164,12 @@ export class ExpenseService {
       status: "DISPONIVEL",
       currentKm: closingData.kmEnd,
     });
+    if (closingData.horimetroEnd !== undefined) {
+      await vehicleService.updateHorimetroAndCheckMaintenance(
+        String(diary.vehicleId),
+        closingData.horimetroEnd
+      );
+    }
     this.broadcastStats();
     return updated;
   }

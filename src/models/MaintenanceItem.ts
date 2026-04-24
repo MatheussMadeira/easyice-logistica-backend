@@ -6,6 +6,7 @@ export interface IMaintenanceItem extends Document {
   vehicleId: mongoose.Types.ObjectId;
   periodicityKm?: number;
   periodicityDays?: number;
+  periodicityHorimetro?: number;
   active: boolean;
 }
 
@@ -15,6 +16,7 @@ const MaintenanceItemSchema = new Schema(
     vehicleId: { type: Schema.Types.ObjectId, ref: "Vehicle", required: true },
     periodicityKm: { type: Number, default: 0 },
     periodicityDays: { type: Number, default: 0 },
+    periodicityHorimetro: { type: Number, default: 0 },
     active: { type: Boolean, default: true },
   },
   { timestamps: true }

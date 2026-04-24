@@ -9,6 +9,9 @@ export interface IVehicle extends Document {
   status: "DISPONIVEL" | "EM_ROTA" | "MANUTENCAO";
   active: boolean;
   maintenanceOverride: boolean;
+  hasHorimetro: boolean;
+  currentHorimetro: number;
+  nextMaintenanceHorimetro: number;
 }
 
 const VehicleSchema = new Schema(
@@ -31,6 +34,9 @@ const VehicleSchema = new Schema(
       default: "DISPONIVEL",
     },
     active: { type: Boolean, default: true },
+    hasHorimetro: { type: Boolean, default: false },
+    currentHorimetro: { type: Number, default: 0 },
+    nextMaintenanceHorimetro: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
