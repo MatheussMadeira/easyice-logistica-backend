@@ -17,6 +17,7 @@ export interface IOrdemServico extends Document {
   dataPrevista?: Date;
   dataAbertura: Date;
   dataFechamento?: Date;
+  periodicidadeHorimetro?: number;
 }
 
 const OrdemServicoSchema = new Schema(
@@ -61,6 +62,7 @@ const OrdemServicoSchema = new Schema(
     dataPrevista: { type: Date },
     dataAbertura: { type: Date, default: Date.now },
     dataFechamento: { type: Date },
+    periodicidadeHorimetro: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

@@ -10,6 +10,7 @@ export class OrdemServicoController {
       const os = await osService.create({
         ...req.body,
         userId: req.userId as string,
+        periodicidadeHorimetro: req.body.periodicidadeHorimetro || 0,
       });
       return res.status(201).json(os) as any;
     } catch (error: any) {
